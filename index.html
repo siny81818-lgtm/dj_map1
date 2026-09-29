@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>부산시 편의점 지도 | Busan Convenience Store Map</title>
+  
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- Sidebar (Desktop / Tablet) -->
+    <aside id="sidebar" class="sidebar">
+      <!-- Header -->
+      <div class="sidebar-header">
+        <div class="brand-title-wrap">
+          <div class="brand-logo-icon">🏪</div>
+          <div>
+            <h1 class="brand-title">부산 편의점 맵</h1>
+            <p class="brand-subtitle">부산광역시 편의점 위치 & 상권 정보</p>
+          </div>
+        </div>
+        <button id="sidebar-toggle-btn" class="icon-btn desktop-only" title="사이드바 접기/펼치기" aria-label="사이드바 토글">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+      </div>
+
+      <!-- Search & Filters Container -->
+      <div class="filter-section">
+        <!-- Keyword Search Input -->
+        <div class="search-box">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="keyword-input" placeholder="상호명, 지점명, 도로명 주소 검색..." autocomplete="off">
+          <button id="clear-search-btn" class="clear-btn" title="검색어 지우기" style="display: none;">&times;</button>
+        </div>
+
+        <!-- District (구/군) Select -->
+        <div class="filter-group">
+          <label for="district-select" class="filter-label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            지역 선택 (구/군)
+          </label>
+          <div class="select-wrapper">
+            <select id="district-select">
+              <option value="ALL">부산시 전체 (16개 구·군)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Brand Filter Chips -->
+        <div class="filter-group">
+          <div class="filter-header-row">
+            <label class="filter-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+              브랜드 선택
+            </label>
+            <button id="reset-filter-btn" class="text-btn" title="필터 초기화">초기화</button>
+          </div>
+          <div id="brand-chips" class="brand-chips">
+            <!-- Brand chips dynamically rendered -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats & Results Meta -->
+      <div class="results-meta">
+        <div class="count-badge">
+          검색 결과 <span id="result-count" class="highlight-count">0</span>개
+          <span class="total-count-label">/ 총 <span id="total-count">0</span>개</span>
+        </div>
+      </div>
+
+      <!-- Store List -->
+      <div id="store-list" class="store-list">
+        <!-- Rendered store cards -->
+      </div>
+    </aside>
+
+    <!-- Main Map View Area -->
+    <main class="main-map-area">
+      <!-- Mobile Floating Search Bar -->
+      <div class="mobile-search-bar mobile-only">
+        <button id="mobile-filter-open-btn" class="mobile-icon-btn" title="필터 열기" aria-label="필터 열기">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+        </button>
+        <div class="mobile-input-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="mobile-keyword-input" placeholder="편의점, 도로명 주소 검색...">
+        </div>
+        <button id="mobile-my-location-btn" class="mobile-icon-btn" title="내 위치" aria-label="내 위치">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+        </button>
+      </div>
+
+      <!-- Map Canvas -->
+      <div id="map" class="map-canvas"></div>
+
+      <!-- Floating Map Controls (Desktop / Floating) -->
+      <div class="floating-controls">
+        <button id="my-location-btn" class="floating-btn" title="현재 내 위치로 이동" aria-label="현재 내 위치">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 21 12 17 5 21 12 2"></polygon></svg>
+        </button>
+        <button id="reset-view-btn" class="floating-btn" title="부산 전체 보기" aria-label="부산 전체">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+        </button>
+      </div>
+
+      <!-- Mobile Bottom Sheet -->
+      <div id="bottom-sheet" class="bottom-sheet mobile-only">
+        <div class="sheet-drag-handle-wrap" id="sheet-handle">
+          <div class="sheet-drag-bar"></div>
+        </div>
+        <div class="sheet-header">
+          <div class="sheet-title-info">
+            <span class="sheet-title">편의점 목록</span>
+            <span id="mobile-result-count" class="sheet-badge">0개</span>
+          </div>
+          <button id="sheet-toggle-btn" class="icon-btn sm" title="목록 펼치기/접기">
+            <svg id="sheet-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+          </button>
+        </div>
+        <div id="mobile-store-list" class="sheet-content store-list">
+          <!-- Rendered in mobile list -->
+        </div>
+      </div>
+    </main>
+
+    <!-- Mobile Filter Modal (Popup for Mobile) -->
+    <div id="mobile-filter-modal" class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">상세 필터 검색</h2>
+          <button id="modal-close-btn" class="close-btn" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="filter-group">
+            <label class="filter-label">지역 선택 (구/군)</label>
+            <div class="select-wrapper">
+              <select id="mobile-district-select">
+                <option value="ALL">부산시 전체 (16개 구·군)</option>
+              </select>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">브랜드 선택</label>
+            <div id="mobile-brand-chips" class="brand-chips">
+              <!-- Rendered for mobile -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="mobile-filter-reset-btn" class="btn btn-secondary">필터 초기화</button>
+          <button id="mobile-filter-apply-btn" class="btn btn-primary">적용하기</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Leaflet MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <!-- Application Modules -->
+  <script src="data/stores.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/filter.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
